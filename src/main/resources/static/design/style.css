@@ -656,6 +656,10 @@ img:not([src]) {
     opacity: 0;
 }
 
+.hide {
+    opacity: 0;
+}
+
 @media only screen and (max-aspect-ratio: 3/2) {
     #content {
         padding: calc(var(--margin-main) / 2);
