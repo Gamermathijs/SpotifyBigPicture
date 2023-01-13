@@ -276,27 +276,22 @@ public class ContextProvider {
             nextSongs = SpotifyCall.execute(spotifyApi.getTheUsersQueue()).getQueue().stream().map((track) -> {
                 return new ListTrackDTO(track.getId(), 0, BotUtils.toArtistNamesList(track), track.getName(), track.getDurationMs());
             }).collect(Collectors.toList());
+
+
+
+            if (previousTrack == null || !previousTrack.getId().equals(currentSong.getId())){
+                previousTracks.add(currentSong);
+                previousTrack = currentSong;
+            }
+
+            List<ListTrackDTO> queue = new ArrayList<>(previousTracks);
+            queue.addAll(nextSongs);
+
+            this.formattedQueueTracks = queue;
+
+            this.queueTrackNumber = previousTracks.size();
         } catch (IOException | SpotifyWebApiException | ParseException e) {
             System.out.println("Error getting queue tracks");
         }
-
-        if (previousTrack == null || !previousTrack.getId().equals(currentSong.getId())){
-            previousTracks.add(currentSong);
-            previousTrack = currentSong;
-        }
-
-        List<ListTrackDTO> queue = new ArrayList<>(previousTracks);
-        queue.addAll(nextSongs);
-
-
-/*        if (previousTrack.getId() != currentSong.getId()) {
-            previousTrack = currentSong;
-            previousTracks.add(currentSong);
-            System.out.println("Added " + currentSong.getTitle() + " to previous tracks");
-        }*/
-
-        this.formattedQueueTracks = queue;
-
-        this.queueTrackNumber = previousTracks.size();
     }
 }

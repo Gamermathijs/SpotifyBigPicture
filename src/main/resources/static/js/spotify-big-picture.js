@@ -36,7 +36,7 @@ let currentData = {
     queueTrackList: []
 };
 
-let useQueue = true;
+let useQueue = false;
 
 function setQueueState(state) {
     useQueue = state;
@@ -157,8 +157,10 @@ async function setDisplayData(changes) {
 
 function setTextData(changes) {
     // Main Info
-    changes.listTracks = changes.queueTrackList;
-    changes.trackNumber = changes.queueTrackNumber;
+    if (useQueue) {
+        changes.listTracks = changes.queueTrackList;
+        changes.trackNumber = changes.queueTrackNumber;
+    }
 
     let titleContainer = document.getElementById("title");
     let trackListContainer = document.getElementById("track-list");
@@ -929,6 +931,15 @@ const PREFERENCES = [
             showHide(document.getElementById("background-rendered"), state);
             setClass(document.getElementById("prerender-canvas"), "no-prerender", !state);
             refreshBackgroundRender();
+        }
+    },
+    {
+        id: "use-queue",
+        name: "Use Queue",
+        hotkey: "q",
+        description: "If enabled, the queue will be used to determine the next song to play. Otherwise, the queue will be ignored and the current playlist will be used instead",
+        callback: (state) => {
+            setQueueState(state);
         }
     },
     {
