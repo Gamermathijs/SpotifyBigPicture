@@ -71,9 +71,9 @@ public class PlaybackInfoProvider {
                 PlaybackInfoDTO currentPlaybackInfo = null;
                 CurrentlyPlayingType type = info.getCurrentlyPlayingType();
                 if (type.equals(CurrentlyPlayingType.TRACK)) {
-                    System.out.println("Track1: " + info.getItem().getName());
+//                    System.out.println("Track1: " + info.getItem().getName());
                     currentPlaybackInfo = buildInfoTrack(info);
-                    System.out.println("Track2: " + (currentPlaybackInfo.getTitle()));
+//                    System.out.println("Track2: " + (currentPlaybackInfo.getTitle()));
                 } else if (type.equals(CurrentlyPlayingType.EPISODE)) {
                     currentPlaybackInfo = buildInfoEpisode(info);
                 }
