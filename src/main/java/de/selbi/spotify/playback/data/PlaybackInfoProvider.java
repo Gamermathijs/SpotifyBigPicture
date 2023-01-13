@@ -157,6 +157,10 @@ public class PlaybackInfoProvider {
     pInfo.setTimeCurrent(info.getProgress_ms());
     pInfo.setTimeTotal(playlistItem.getDurationMs());
 
+    contextProvider.updateQueueTracks();
+    pInfo.setQueueTrackNumber(contextProvider.getQueueTrackNumber());
+    pInfo.setQueueTrackList(contextProvider.getFormattedQueueTracks());
+
     String artworkUrl = artworkUrlProvider.findArtworkUrl(playlistItem);
     if (artworkUrl != null && !artworkUrl.isEmpty()) {
       pInfo.setImage(artworkUrl);

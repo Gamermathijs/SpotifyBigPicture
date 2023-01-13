@@ -18,6 +18,24 @@ public class PlaybackInfoDTO {
   public static final PlaybackInfoDTO EMPTY = new PlaybackInfoDTO(Type.EMPTY);
   public static final PlaybackInfoDTO HEARTBEAT = new PlaybackInfoDTO(Type.HEARTBEAT);
   public static final PlaybackInfoDTO DARK_MODE = new PlaybackInfoDTO(Type.DARK_MODE);
+  private Integer queueTrackNumber;
+  private List<ListTrackDTO> queueTrackList;
+
+  public void setQueueTrackNumber(Integer queueTrackNumber) {
+    this.queueTrackNumber = queueTrackNumber;
+  }
+
+  public void setQueueTrackList(List<ListTrackDTO> formattedQueueTracks) {
+    this.queueTrackList = formattedQueueTracks;
+  }
+
+  public Integer getQueueTrackNumber() {
+    return queueTrackNumber;
+  }
+
+  public List<ListTrackDTO> getQueueTrackList() {
+    return queueTrackList;
+  }
 
   enum Type {
     EMPTY,

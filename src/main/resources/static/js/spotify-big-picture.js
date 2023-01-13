@@ -31,8 +31,16 @@ let currentData = {
     timeTotal: 0,
     title: "",
     type: "",
-    volume: 0
+    volume: 0,
+    queueTrackNumber: 0,
+    queueTrackList: []
 };
+
+let useQueue = true;
+
+function setQueueState(state) {
+    useQueue = state;
+}
 
 let idle = false;
 
@@ -149,23 +157,41 @@ async function setDisplayData(changes) {
 
 function setTextData(changes) {
     // Main Info
+    changes.listTracks = changes.queueTrackList;
+    changes.trackNumber = changes.queueTrackNumber;
+
     let titleContainer = document.getElementById("title");
     let trackListContainer = document.getElementById("track-list");
     let listViewType = 'trackListView' in changes ? changes.trackListView : currentData.trackListView;
-    let trackCount = (changes.listTracks || currentData.listTracks || []).length;
+    let currentDataListTracks = currentData.listTracks;
+    let changesListTracks = changes.listTracks;
 
+    if (useQueue) {
+        currentDataListTracks = currentData.queueTrackList;
+        changesListTracks = changes.queueTrackList;
+        listViewType = "PLAYLIST";
+    }
+
+    let trackCount = (changesListTracks || currentDataListTracks || []).length;
     let trackNumber = 'trackNumber' in changes ? changes.trackNumber : currentData.trackNumber;
+
+    if (useQueue) {
+        trackNumber = ('queueTrackNumber' in changes ? changes.queueTrackNumber : currentData.queueTrackNumber) - 1;
+    }
+
     let isQueue = trackNumber === 0 || ('context' in changes && changes.context.startsWith("Queue >> "));
     let listViewEnabled = listViewType !== "SINGLE"
         && trackCount > 1
         && !isQueue;
+
     let titleDisplayed = !listViewEnabled || listViewType === "PLAYLIST";
     showHide(titleContainer, titleDisplayed);
     setClass(titleContainer, "compact", listViewType === "PLAYLIST");
     showHide(trackListContainer, listViewEnabled);
     if (listViewEnabled) {
         let onlyOneArtist = false;
-        let listTracks = changes.listTracks || currentData.listTracks;
+        let listTracks = changesListTracks || currentDataListTracks;
+
         if (listTracks.length > 0) {
             let potentialUniqueArtist = listTracks[0].artists[0];
             onlyOneArtist = listTracks.every((track) => track.artists[0] === potentialUniqueArtist);
@@ -193,47 +219,108 @@ function setTextData(changes) {
         fadeIn(titleContainer);
     }
 
-    if ('listTracks' in changes && JSON.stringify(changes.listTracks) !== JSON.stringify(currentData.listTracks)) {
-        trackListContainer.innerHTML = "";
-        let listTracks = changes.listTracks || currentData.listTracks;
+    function addTrack(trackItem, trackNumPadLength) {
+        let trackElem = document.createElement("div");
+        trackElem.className = "track-elem";
+
+        let trackNumberContainer = document.createElement("div");
+        trackNumberContainer.innerHTML = padToLength(trackItem.trackNumber, trackNumPadLength);
+        trackNumberContainer.className = "track-number"
+
+        let trackArtist = document.createElement("div");
+        trackArtist.innerHTML = trackItem.artists[0];
+        trackArtist.className = "track-artist";
+
+        let splitTitle = separateUnimportantTitleInfo(trackItem.title);
+        let trackName = document.createElement("div");
+        trackName.className = "track-name"
+        let trackNameMain = document.createElement("span");
+        trackNameMain.innerHTML = removeFeaturedArtists(splitTitle.main) + buildFeaturedArtistsString(trackItem.artists);
+        let trackNameExtra = document.createElement("span");
+        trackNameExtra.className = "extra";
+        trackNameExtra.innerHTML = splitTitle.extra;
+        trackName.append(trackNameMain, trackNameExtra);
+
+        let trackLength = document.createElement("div");
+        trackLength.className = "track-length"
+        trackLength.innerHTML = formatTime(0, trackItem.length).total;
+
+        // TODO performance improvement with sliding window (NTS: visibility hidden does not do anything, but display none does)
+
+        trackElem.append(trackNumberContainer, trackArtist, trackName, trackLength);
+        trackListContainer.append(trackElem);
+    }
+
+    if ('listTracks' in changes && JSON.stringify(changesListTracks) !== JSON.stringify(currentDataListTracks)) {
+        let listTracks = changesListTracks || currentDataListTracks;
         let trackNumPadLength = listTracks.length.toString().length;
-        for (let trackItem of listTracks) {
-            let trackElem = document.createElement("div");
-            trackElem.className = "track-elem";
+        if (!useQueue) {
+            trackListContainer.innerHTML = "";
 
-            let trackNumberContainer = document.createElement("div");
-            trackNumberContainer.innerHTML = padToLength(trackItem.trackNumber, trackNumPadLength);
-            trackNumberContainer.className = "track-number"
+            for (let trackItem of listTracks) {
+                let trackElem = document.createElement("div");
+                trackElem.className = "track-elem";
 
-            let trackArtist = document.createElement("div");
-            trackArtist.innerHTML = trackItem.artists[0];
-            trackArtist.className = "track-artist";
+                let trackNumberContainer = document.createElement("div");
+                trackNumberContainer.innerHTML = padToLength(trackItem.trackNumber, trackNumPadLength);
+                trackNumberContainer.className = "track-number"
 
-            let splitTitle = separateUnimportantTitleInfo(trackItem.title);
-            let trackName = document.createElement("div");
-            trackName.className = "track-name"
-            let trackNameMain = document.createElement("span");
-            trackNameMain.innerHTML = removeFeaturedArtists(splitTitle.main) + buildFeaturedArtistsString(trackItem.artists);
-            let trackNameExtra = document.createElement("span");
-            trackNameExtra.className = "extra";
-            trackNameExtra.innerHTML = splitTitle.extra;
-            trackName.append(trackNameMain, trackNameExtra);
+                let trackArtist = document.createElement("div");
+                trackArtist.innerHTML = trackItem.artists[0];
+                trackArtist.className = "track-artist";
 
-            let trackLength = document.createElement("div");
-            trackLength.className = "track-length"
-            trackLength.innerHTML = formatTime(0, trackItem.length).total;
+                let splitTitle = separateUnimportantTitleInfo(trackItem.title);
+                let trackName = document.createElement("div");
+                trackName.className = "track-name"
+                let trackNameMain = document.createElement("span");
+                trackNameMain.innerHTML = removeFeaturedArtists(splitTitle.main) + buildFeaturedArtistsString(trackItem.artists);
+                let trackNameExtra = document.createElement("span");
+                trackNameExtra.className = "extra";
+                trackNameExtra.innerHTML = splitTitle.extra;
+                trackName.append(trackNameMain, trackNameExtra);
 
-            // TODO performance improvement with sliding window (NTS: visibility hidden does not do anything, but display none does)
+                let trackLength = document.createElement("div");
+                trackLength.className = "track-length"
+                trackLength.innerHTML = formatTime(0, trackItem.length).total;
 
-            trackElem.append(trackNumberContainer, trackArtist, trackName, trackLength);
-            trackListContainer.append(trackElem);
+                // TODO performance improvement with sliding window (NTS: visibility hidden does not do anything, but display none does)
+
+                trackElem.append(trackNumberContainer, trackArtist, trackName, trackLength);
+                trackListContainer.append(trackElem);
+            }
+        } else {
+            if (changesListTracks !== undefined) {
+                let tracksToRemove = currentDataListTracks.map((track, index) => {
+                    track.trackNumber = index
+                    console.log(track, index);
+                    return track;
+                }).filter((track, index) => changesListTracks.at(index) === undefined || changesListTracks.at(index).id !== track.id).reverse();
+                for (let trackItem of tracksToRemove) {
+                    let child = trackListContainer.children[trackItem.trackNumber];
+                    currentDataListTracks = currentDataListTracks.filter((track, index) => index !== trackItem.trackNumber);
+                    if (child === undefined) {
+                        continue;
+                    }
+                    child.remove();
+                }
+                let newTrackElems = changesListTracks.filter((track, index) => currentDataListTracks.at(index) === undefined);
+                for (let trackItem of newTrackElems) {
+                    if (currentDataListTracks.at(trackItem.trackNumber) === undefined) {
+                        addTrack(trackItem, trackNumPadLength);
+                    } else {
+                        // trackListContainer.children[trackItem.trackNumber - 1].remove();
+                        // trackListContainer.children.item(trackItem.trackNumber - 1).remove();
+                        addTrack(trackItem, trackNumPadLength);
+                    }
+                }
+            }
         }
 
         fadeIn(trackListContainer);
     }
 
-    if ('trackNumber' in changes || currentData.trackListView !== "SINGLE") {
-        updateScrollPositions(changes.trackNumber);
+    if ('trackNumber' in changes || currentData.trackListView !== "SINGLE" || (useQueue && 'queTrackList' in changes)) {
+        updateScrollPositions(useQueue ? changes.queueTrackNumber || currentData.queueTrackNumber : changes.trackNumber);
     }
 
     if ('artists' in changes && JSON.stringify(changes.artists) !== JSON.stringify(currentData.artists)) {

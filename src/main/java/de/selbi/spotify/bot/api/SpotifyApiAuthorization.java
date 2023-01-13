@@ -35,7 +35,7 @@ public class SpotifyApiAuthorization {
 
   protected final static String LOGIN_CALLBACK_URI = "/login-callback";
 
-  private final static String SCOPES = "user-read-playback-position user-read-playback-state";
+  private final static String SCOPES = "user-read-playback-position user-read-playback-state user-read-recently-played";
 
   private static final long LOGIN_TIMEOUT = 10;
 
