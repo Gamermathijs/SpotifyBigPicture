@@ -30,180 +30,182 @@ import se.michaelthelin.spotify.model_objects.specification.Track;
 @Component
 public class PlaybackInfoProvider {
 
-  private static final String BLANK = "BLANK";
+    private static final String BLANK = "BLANK";
 
-  private final SpotifyApi spotifyApi;
-  private final ContextProvider contextProvider;
-  private final ArtworkUrlProvider artworkUrlProvider;
-  private final ColorProvider dominantColorProvider;
+    private final SpotifyApi spotifyApi;
+    private final ContextProvider contextProvider;
+    private final ArtworkUrlProvider artworkUrlProvider;
+    private final ColorProvider dominantColorProvider;
 
-  private PlaybackInfoDTO previous;
-  private static final List<Field> DTO_FIELDS;
-  private final long deployTime;
+    private PlaybackInfoDTO previous;
+    private static final List<Field> DTO_FIELDS;
+    private final long deployTime;
 
-  static {
-    DTO_FIELDS = Stream.of(PlaybackInfoDTO.class.getDeclaredFields())
-        .filter(f -> !Modifier.isFinal(f.getModifiers()))
-        .filter(f -> !f.getType().equals(PlaybackInfoDTO.Type.class))
-        .sorted(Comparator.comparing(Field::getName))
-        .collect(Collectors.toList());
-  }
-
-  PlaybackInfoProvider(SpotifyApi spotifyApi,
-      ContextProvider contextProvider,
-      ArtworkUrlProvider artworkUrlProvider,
-      ColorProvider colorProvider) {
-    this.spotifyApi = spotifyApi;
-    this.contextProvider = contextProvider;
-    this.artworkUrlProvider = artworkUrlProvider;
-    this.dominantColorProvider = colorProvider;
-    this.deployTime = System.currentTimeMillis();
-  }
-
-  public PlaybackInfoDTO getCurrentPlaybackInfo(boolean full) {
-    if (previous == null) {
-      full = true;
+    static {
+        DTO_FIELDS = Stream.of(PlaybackInfoDTO.class.getDeclaredFields())
+                .filter(f -> !Modifier.isFinal(f.getModifiers()))
+                .filter(f -> !f.getType().equals(PlaybackInfoDTO.Type.class))
+                .sorted(Comparator.comparing(Field::getName))
+                .collect(Collectors.toList());
     }
-    try {
-      CurrentlyPlayingContext info =
-          SpotifyCall.execute(spotifyApi.getInformationAboutUsersCurrentPlayback().additionalTypes("episode"));
-      if (info != null) {
-        PlaybackInfoDTO currentPlaybackInfo = null;
-        CurrentlyPlayingType type = info.getCurrentlyPlayingType();
-        if (type.equals(CurrentlyPlayingType.TRACK)) {
-          currentPlaybackInfo = buildInfoTrack(info);
-        } else if (type.equals(CurrentlyPlayingType.EPISODE)) {
-          currentPlaybackInfo = buildInfoEpisode(info);
+
+    PlaybackInfoProvider(SpotifyApi spotifyApi,
+                         ContextProvider contextProvider,
+                         ArtworkUrlProvider artworkUrlProvider,
+                         ColorProvider colorProvider) {
+        this.spotifyApi = spotifyApi;
+        this.contextProvider = contextProvider;
+        this.artworkUrlProvider = artworkUrlProvider;
+        this.dominantColorProvider = colorProvider;
+        this.deployTime = System.currentTimeMillis();
+    }
+
+    public PlaybackInfoDTO getCurrentPlaybackInfo(boolean full) {
+        if (previous == null) {
+            full = true;
         }
-        if (full) {
-          this.previous = currentPlaybackInfo;
-          return currentPlaybackInfo;
-        } else if (currentPlaybackInfo != null) {
-          try {
-            return findInfoDifferencesAndUpdateCurrent(currentPlaybackInfo);
-          } catch (Exception e) {
-            throw new BotException(e);
-          }
+        try {
+            CurrentlyPlayingContext info =
+                    SpotifyCall.execute(spotifyApi.getInformationAboutUsersCurrentPlayback().additionalTypes("episode"));
+            if (info != null) {
+                PlaybackInfoDTO currentPlaybackInfo = null;
+                CurrentlyPlayingType type = info.getCurrentlyPlayingType();
+                if (type.equals(CurrentlyPlayingType.TRACK)) {
+                    System.out.println("Track1: " + info.getItem().getName());
+                    currentPlaybackInfo = buildInfoTrack(info);
+                    System.out.println("Track2: " + (currentPlaybackInfo.getTitle()));
+                } else if (type.equals(CurrentlyPlayingType.EPISODE)) {
+                    currentPlaybackInfo = buildInfoEpisode(info);
+                }
+                if (full) {
+                    this.previous = currentPlaybackInfo;
+                    return currentPlaybackInfo;
+                } else if (currentPlaybackInfo != null) {
+                    try {
+                        return findInfoDifferencesAndUpdateCurrent(currentPlaybackInfo);
+                    } catch (Exception e) {
+                        throw new BotException(e);
+                    }
+                }
+            }
+        } catch (BotException e) {
+            e.printStackTrace();
         }
-      }
-    } catch (BotException e) {
-      e.printStackTrace();
+        return PlaybackInfoDTO.EMPTY;
     }
-    return PlaybackInfoDTO.EMPTY;
-  }
 
-  private void checkDifferences(PlaybackInfoDTO differences, PlaybackInfoDTO previous, PlaybackInfoDTO current, String field)
-      throws Exception {
-    PropertyDescriptor propertyDescriptor = new PropertyDescriptor(field, PlaybackInfoDTO.class);
-    Object previousObject = propertyDescriptor.getReadMethod().invoke(previous);
-    Object currentObject = propertyDescriptor.getReadMethod().invoke(current);
-    if (!Objects.equals(previousObject, currentObject)) {
-      differences.setType(PlaybackInfoDTO.Type.DATA);
-      propertyDescriptor.getWriteMethod().invoke(differences, currentObject);
-      propertyDescriptor.getWriteMethod().invoke(this.previous, currentObject);
-    }
-  }
-
-  private PlaybackInfoDTO findInfoDifferencesAndUpdateCurrent(PlaybackInfoDTO current) throws Exception {
-    PlaybackInfoDTO diff = new PlaybackInfoDTO(PlaybackInfoDTO.Type.EMPTY);
-    for (Field field : DTO_FIELDS) {
-      String fieldName = field.getName();
-      if (fieldName.equals("timeCurrent")) {
-        // Estimated progress always needs to get updated, so it's handled separately
-        if (diff.isPaused() != null || !previous.getTimeTotal().equals(current.getTimeTotal())
-            || !PlaybackInfoUtils.isWithinEstimatedProgressMs(previous, current)) {
-          diff.setType(PlaybackInfoDTO.Type.DATA);
-          diff.setTimeCurrent(current.getTimeCurrent());
+    private void checkDifferences(PlaybackInfoDTO differences, PlaybackInfoDTO previous, PlaybackInfoDTO current, String field)
+            throws Exception {
+        PropertyDescriptor propertyDescriptor = new PropertyDescriptor(field, PlaybackInfoDTO.class);
+        Object previousObject = propertyDescriptor.getReadMethod().invoke(previous);
+        Object currentObject = propertyDescriptor.getReadMethod().invoke(current);
+        if (!Objects.equals(previousObject, currentObject)) {
+            differences.setType(PlaybackInfoDTO.Type.DATA);
+            propertyDescriptor.getWriteMethod().invoke(differences, currentObject);
+            propertyDescriptor.getWriteMethod().invoke(this.previous, currentObject);
         }
-        this.previous.setTimeCurrent(current.getTimeCurrent());
-      } else {
-        checkDifferences(diff, previous, current, fieldName);
-      }
     }
 
-    return diff;
-  }
+    private PlaybackInfoDTO findInfoDifferencesAndUpdateCurrent(PlaybackInfoDTO current) throws Exception {
+        PlaybackInfoDTO diff = new PlaybackInfoDTO(PlaybackInfoDTO.Type.EMPTY);
+        for (Field field : DTO_FIELDS) {
+            String fieldName = field.getName();
+            if (fieldName.equals("timeCurrent")) {
+                // Estimated progress always needs to get updated, so it's handled separately
+                if (diff.isPaused() != null || !previous.getTimeTotal().equals(current.getTimeTotal())
+                        || !PlaybackInfoUtils.isWithinEstimatedProgressMs(previous, current)) {
+                    diff.setType(PlaybackInfoDTO.Type.DATA);
+                    diff.setTimeCurrent(current.getTimeCurrent());
+                }
+                this.previous.setTimeCurrent(current.getTimeCurrent());
+            } else {
+                checkDifferences(diff, previous, current, fieldName);
+            }
+        }
 
-  private PlaybackInfoDTO buildBaseInfo(CurrentlyPlayingContext info) {
-    IPlaylistItem playlistItem = SpotifyCall.execute(spotifyApi.getUsersCurrentlyPlayingTrack()).getItem();
-    PlaybackInfoDTO pInfo = new PlaybackInfoDTO(PlaybackInfoDTO.Type.DATA);
-
-    pInfo.setPlaylistItem(playlistItem);
-
-    pInfo.setId(playlistItem.getId());
-
-    pInfo.setPaused(!info.getIs_playing());
-    pInfo.setShuffle(info.getShuffle_state());
-    pInfo.setRepeat(info.getRepeat_state());
-    pInfo.setVolume(info.getDevice().getVolume_percent());
-
-    pInfo.setContext(contextProvider.findContextName(info, previous));
-    pInfo.setDevice(info.getDevice().getName());
-
-    if (info.getContext() != null && ModelObjectType.ALBUM.equals(info.getContext().getType())) {
-      pInfo.setListTracks(contextProvider.getFormattedAlbumTracks());
-      pInfo.setTrackNumber(contextProvider.getCurrentlyPlayingAlbumTrackNumber());
-      pInfo.setTrackListView(PlaybackInfoDTO.ListViewType.ALBUM);
-    } else if (info.getContext() != null && ModelObjectType.PLAYLIST.equals(info.getContext().getType()) && !pInfo.isShuffle()) {
-      pInfo.setListTracks(contextProvider.getFormattedPlaylistTracks());
-      pInfo.setTrackNumber(contextProvider.getCurrentlyPlayingPlaylistTrackNumber(info));
-      pInfo.setTrackListView(PlaybackInfoDTO.ListViewType.PLAYLIST);
-    } else if (info.getContext() != null && ModelObjectType.ARTIST.equals(info.getContext().getType())) {
-      pInfo.setListTracks(contextProvider.getFormattedPlaylistTracks());
-      pInfo.setTrackNumber(contextProvider.getCurrentlyPlayingPlaylistTrackNumber(info));
-      pInfo.setTrackListView(PlaybackInfoDTO.ListViewType.PLAYLIST);
-    } else {
-      pInfo.setTrackListView(PlaybackInfoDTO.ListViewType.SINGLE);
+        return diff;
     }
 
-    pInfo.setTimeCurrent(info.getProgress_ms());
-    pInfo.setTimeTotal(playlistItem.getDurationMs());
+    private PlaybackInfoDTO buildBaseInfo(CurrentlyPlayingContext info) {
+        IPlaylistItem playlistItem = SpotifyCall.execute(spotifyApi.getUsersCurrentlyPlayingTrack()).getItem();
+        PlaybackInfoDTO pInfo = new PlaybackInfoDTO(PlaybackInfoDTO.Type.DATA);
 
-    contextProvider.updateQueueTracks();
-    pInfo.setQueueTrackNumber(contextProvider.getQueueTrackNumber());
-    pInfo.setQueueTrackList(contextProvider.getFormattedQueueTracks());
+        pInfo.setPlaylistItem(playlistItem);
 
-    String artworkUrl = artworkUrlProvider.findArtworkUrl(playlistItem);
-    if (artworkUrl != null && !artworkUrl.isEmpty()) {
-      pInfo.setImage(artworkUrl);
-      DominantRGBs colors = dominantColorProvider.getDominantColorFromImageUrl(artworkUrl);
-      pInfo.setImageColors(colors);
-    } else {
-      pInfo.setImage(BLANK);
-      pInfo.setImageColors(DominantRGBs.FALLBACK);
+        pInfo.setId(playlistItem.getId());
+
+        pInfo.setPaused(!info.getIs_playing());
+        pInfo.setShuffle(info.getShuffle_state());
+        pInfo.setRepeat(info.getRepeat_state());
+        pInfo.setVolume(info.getDevice().getVolume_percent());
+
+        pInfo.setContext(contextProvider.findContextName(info, previous));
+        pInfo.setDevice(info.getDevice().getName());
+
+        if (info.getContext() != null && ModelObjectType.ALBUM.equals(info.getContext().getType())) {
+            pInfo.setListTracks(contextProvider.getFormattedAlbumTracks());
+            pInfo.setTrackNumber(contextProvider.getCurrentlyPlayingAlbumTrackNumber());
+            pInfo.setTrackListView(PlaybackInfoDTO.ListViewType.ALBUM);
+        } else if (info.getContext() != null && ModelObjectType.PLAYLIST.equals(info.getContext().getType()) && !pInfo.isShuffle()) {
+            pInfo.setListTracks(contextProvider.getFormattedPlaylistTracks());
+            pInfo.setTrackNumber(contextProvider.getCurrentlyPlayingPlaylistTrackNumber(info));
+            pInfo.setTrackListView(PlaybackInfoDTO.ListViewType.PLAYLIST);
+        } else if (info.getContext() != null && ModelObjectType.ARTIST.equals(info.getContext().getType())) {
+            pInfo.setListTracks(contextProvider.getFormattedPlaylistTracks());
+            pInfo.setTrackNumber(contextProvider.getCurrentlyPlayingPlaylistTrackNumber(info));
+            pInfo.setTrackListView(PlaybackInfoDTO.ListViewType.PLAYLIST);
+        } else {
+            pInfo.setTrackListView(PlaybackInfoDTO.ListViewType.SINGLE);
+        }
+
+        pInfo.setTimeCurrent(info.getProgress_ms());
+        pInfo.setTimeTotal(playlistItem.getDurationMs());
+
+        contextProvider.updateQueueTracks();
+        pInfo.setQueueTrackNumber(contextProvider.getQueueTrackNumber());
+        pInfo.setQueueTrackList(contextProvider.getFormattedQueueTracks());
+
+        String artworkUrl = artworkUrlProvider.findArtworkUrl(playlistItem);
+        if (artworkUrl != null && !artworkUrl.isEmpty()) {
+            pInfo.setImage(artworkUrl);
+            DominantRGBs colors = dominantColorProvider.getDominantColorFromImageUrl(artworkUrl);
+            pInfo.setImageColors(colors);
+        } else {
+            pInfo.setImage(BLANK);
+            pInfo.setImageColors(DominantRGBs.FALLBACK);
+        }
+
+        pInfo.setDeployTime(deployTime);
+
+        return pInfo;
     }
 
-    pInfo.setDeployTime(deployTime);
+    private PlaybackInfoDTO buildInfoTrack(CurrentlyPlayingContext info) {
+        PlaybackInfoDTO pInfo = buildBaseInfo(info);
 
-    return pInfo;
-  }
+//        Track track = (Track) pInfo.getPlaylistItem();
 
-  private PlaybackInfoDTO buildInfoTrack(CurrentlyPlayingContext info) {
-    PlaybackInfoDTO pInfo = buildBaseInfo(info);
+        Track track = (Track) info.getItem();
+        pInfo.setArtists(BotUtils.toArtistNamesList(track.getArtists()));
+        pInfo.setTitle(track.getName());
+        pInfo.setAlbum(track.getAlbum().getName());
+        pInfo.setRelease(PlaybackInfoUtils.findReleaseYear(track));
+        pInfo.setDescription(BLANK);
 
-    Track track = (Track) pInfo.getPlaylistItem();
+        return pInfo;
+    }
 
-//    Track track = (Track) info.getItem();
-    pInfo.setArtists(BotUtils.toArtistNamesList(track.getArtists()));
-    pInfo.setTitle(track.getName());
-    pInfo.setAlbum(track.getAlbum().getName());
-    pInfo.setRelease(PlaybackInfoUtils.findReleaseYear(track));
-    pInfo.setDescription(BLANK);
+    private PlaybackInfoDTO buildInfoEpisode(CurrentlyPlayingContext info) {
+        PlaybackInfoDTO pInfo = buildBaseInfo(info);
 
-    return pInfo;
-  }
+        Episode episode = (Episode) pInfo.getPlaylistItem();
+        pInfo.setArtists(List.of(episode.getShow().getName()));
+        pInfo.setTitle(episode.getName());
+        pInfo.setAlbum(episode.getShow().getPublisher());
+        pInfo.setDescription(episode.getDescription());
+        pInfo.setRelease(episode.getReleaseDate());
 
-  private PlaybackInfoDTO buildInfoEpisode(CurrentlyPlayingContext info) {
-    PlaybackInfoDTO pInfo = buildBaseInfo(info);
-
-    Episode episode = (Episode) pInfo.getPlaylistItem();
-    pInfo.setArtists(List.of(episode.getShow().getName()));
-    pInfo.setTitle(episode.getName());
-    pInfo.setAlbum(episode.getShow().getPublisher());
-    pInfo.setDescription(episode.getDescription());
-    pInfo.setRelease(episode.getReleaseDate());
-
-    return pInfo;
-  }
+        return pInfo;
+    }
 
 }
