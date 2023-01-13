@@ -37,6 +37,7 @@ public class PlaybackController {
   public void ready() {
     System.out.println("Spotify Playback Info ready!");
     System.out.println("Scheduled polling is " + (SpotifyBigPicture.scheduledPollingDisabled ? "disabled" : "enabled"));
+    loop();
   }
 
   /**
@@ -98,7 +99,7 @@ public class PlaybackController {
    * Poll the Spotify API for changed playback info and set it to the listeners if
    * anything was changed
    */
-  @Scheduled(initialDelay = PlaybackInfoConstants.INTERVAL_MS, fixedRate = PlaybackInfoConstants.INTERVAL_MS)
+
   private void fetchAndPublishCurrentPlaybackInfo() {
     if (!SpotifyBigPicture.scheduledPollingDisabled) {
       if (isAnyoneListening()) {
@@ -106,6 +107,18 @@ public class PlaybackController {
         if (info != null && info.hasPayload()) {
           sseSend(info);
         }
+      }
+    }
+  }
+
+  private void loop() {
+    while (true) {
+      new Thread(this::fetchAndPublishCurrentPlaybackInfo).start();
+//      fetchAndPublishCurrentPlaybackInfo();
+      try {
+        Thread.sleep(PlaybackInfoConstants.INTERVAL_MS);
+      } catch (InterruptedException e) {
+        e.printStackTrace();
       }
     }
   }

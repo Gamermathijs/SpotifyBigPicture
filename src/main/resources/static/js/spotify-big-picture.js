@@ -36,10 +36,14 @@ let currentData = {
     queueTrackList: []
 };
 
-let useQueue = false;
+let useQueue = true;
 
 function setQueueState(state) {
     useQueue = state;
+
+    currentData.queueTrackNumber = 0;
+    currentData.queueTrackList = [];
+    singleRequest(true);
 }
 
 let idle = false;
