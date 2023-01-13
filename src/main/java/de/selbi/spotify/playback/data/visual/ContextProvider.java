@@ -271,16 +271,17 @@ public class ContextProvider {
             IPlaylistItem currentlyPlayingTrack = spotifyApi.getUsersCurrentlyPlayingTrack().build().execute().getItem();
             currentSong = new ListTrackDTO(currentlyPlayingTrack.getId(), 0, BotUtils.toArtistNamesList((Track) currentlyPlayingTrack), currentlyPlayingTrack.getName(), currentlyPlayingTrack.getDurationMs());
 
+            if (previousTrack == null || !previousTrack.getId().equals(currentSong.getId())){
+                previousTracks.add(currentSong);
+                previousTrack = currentSong;
+            }
+
             nextSongs = SpotifyCall.execute(spotifyApi.getTheUsersQueue()).getQueue().stream().map((track) -> {
                 return new ListTrackDTO(track.getId(), 0, BotUtils.toArtistNamesList(track), track.getName(), track.getDurationMs());
             }).collect(Collectors.toList());
 
 
 
-            if (previousTrack == null || !previousTrack.getId().equals(currentSong.getId())){
-                previousTracks.add(currentSong);
-                previousTrack = currentSong;
-            }
 
             List<ListTrackDTO> queue = new ArrayList<>(previousTracks);
             queue.addAll(nextSongs);
