@@ -149,8 +149,6 @@ public class ContextProvider {
             String playlistId = context.getHref().replace(PlaybackInfoConstants.PLAYLIST_PREFIX, "");
             Playlist contextPlaylist = SpotifyCall.execute(spotifyApi.getPlaylist(playlistId));
 
-            System.out.println("Playlist: " + contextPlaylist.getName());
-
             List<PlaylistTrack> playlistTracks = SpotifyCall.executePaging(spotifyApi.getPlaylistsItems(playlistId));
             List<ListTrackDTO> listTrackDTOS = new ArrayList<>();
             for (int i = 0; i < playlistTracks.size(); i++) {
@@ -290,8 +288,8 @@ public class ContextProvider {
             this.formattedQueueTracks = queue;
 
             this.queueTrackNumber = previousTracks.size();
-        } catch (IOException | SpotifyWebApiException | ParseException e) {
-            System.out.println("Error getting queue tracks");
+        } catch (IOException | SpotifyWebApiException | ParseException ignored) {
+
         }
     }
 }

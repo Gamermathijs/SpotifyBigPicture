@@ -43,6 +43,12 @@ function setQueueState(state) {
 
     currentData.queueTrackNumber = 0;
     currentData.queueTrackList = [];
+    currentData.listTracks = [];
+    currentData.trackListView = "";
+
+    let trackListContainer = document.getElementById("track-list");
+    trackListContainer.innerHTML = "";
+
     singleRequest(true);
 }
 
