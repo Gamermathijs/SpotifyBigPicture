@@ -167,7 +167,7 @@ async function setDisplayData(changes) {
 
 function setTextData(changes) {
     // Main Info
-    if (useQueue) {
+    if (useQueue && ('queueTrackNumber' in changes || 'queueTrackList' in changes)) {
         changes.listTracks = changes.queueTrackList;
         changes.trackNumber = changes.queueTrackNumber;
     }

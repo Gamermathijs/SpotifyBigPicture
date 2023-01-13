@@ -125,8 +125,10 @@ public class PlaybackInfoProvider {
   }
 
   private PlaybackInfoDTO buildBaseInfo(CurrentlyPlayingContext info) {
-    IPlaylistItem playlistItem = info.getItem();
+    IPlaylistItem playlistItem = SpotifyCall.execute(spotifyApi.getUsersCurrentlyPlayingTrack()).getItem();
     PlaybackInfoDTO pInfo = new PlaybackInfoDTO(PlaybackInfoDTO.Type.DATA);
+
+    pInfo.setPlaylistItem(playlistItem);
 
     pInfo.setId(playlistItem.getId());
 
@@ -179,7 +181,9 @@ public class PlaybackInfoProvider {
   private PlaybackInfoDTO buildInfoTrack(CurrentlyPlayingContext info) {
     PlaybackInfoDTO pInfo = buildBaseInfo(info);
 
-    Track track = (Track) info.getItem();
+    Track track = (Track) pInfo.getPlaylistItem();
+
+//    Track track = (Track) info.getItem();
     pInfo.setArtists(BotUtils.toArtistNamesList(track.getArtists()));
     pInfo.setTitle(track.getName());
     pInfo.setAlbum(track.getAlbum().getName());
@@ -192,7 +196,7 @@ public class PlaybackInfoProvider {
   private PlaybackInfoDTO buildInfoEpisode(CurrentlyPlayingContext info) {
     PlaybackInfoDTO pInfo = buildBaseInfo(info);
 
-    Episode episode = (Episode) info.getItem();
+    Episode episode = (Episode) pInfo.getPlaylistItem();
     pInfo.setArtists(List.of(episode.getShow().getName()));
     pInfo.setTitle(episode.getName());
     pInfo.setAlbum(episode.getShow().getPublisher());

@@ -8,6 +8,7 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
 import de.selbi.spotify.playback.data.help.ListTrackDTO;
 import de.selbi.spotify.playback.data.visual.color.DominantRGBs;
+import se.michaelthelin.spotify.model_objects.IPlaylistItem;
 
 /**
  * Wrapper class for the playback info to be sent via SSEEmitter to the
@@ -15,240 +16,249 @@ import de.selbi.spotify.playback.data.visual.color.DominantRGBs;
  */
 @JsonInclude(Include.NON_NULL)
 public class PlaybackInfoDTO {
-  public static final PlaybackInfoDTO EMPTY = new PlaybackInfoDTO(Type.EMPTY);
-  public static final PlaybackInfoDTO HEARTBEAT = new PlaybackInfoDTO(Type.HEARTBEAT);
-  public static final PlaybackInfoDTO DARK_MODE = new PlaybackInfoDTO(Type.DARK_MODE);
-  private Integer queueTrackNumber;
-  private List<ListTrackDTO> queueTrackList;
+    public static final PlaybackInfoDTO EMPTY = new PlaybackInfoDTO(Type.EMPTY);
+    public static final PlaybackInfoDTO HEARTBEAT = new PlaybackInfoDTO(Type.HEARTBEAT);
+    public static final PlaybackInfoDTO DARK_MODE = new PlaybackInfoDTO(Type.DARK_MODE);
+    private Integer queueTrackNumber;
+    private List<ListTrackDTO> queueTrackList;
+    private IPlaylistItem playlistItem;
 
-  public void setQueueTrackNumber(Integer queueTrackNumber) {
-    this.queueTrackNumber = queueTrackNumber;
-  }
+    public void setQueueTrackNumber(Integer queueTrackNumber) {
+        this.queueTrackNumber = queueTrackNumber;
+    }
 
-  public void setQueueTrackList(List<ListTrackDTO> formattedQueueTracks) {
-    this.queueTrackList = formattedQueueTracks;
-  }
+    public void setQueueTrackList(List<ListTrackDTO> formattedQueueTracks) {
+        this.queueTrackList = formattedQueueTracks;
+    }
 
-  public Integer getQueueTrackNumber() {
-    return queueTrackNumber;
-  }
+    public Integer getQueueTrackNumber() {
+        return queueTrackNumber;
+    }
 
-  public List<ListTrackDTO> getQueueTrackList() {
-    return queueTrackList;
-  }
+    public List<ListTrackDTO> getQueueTrackList() {
+        return queueTrackList;
+    }
 
-  enum Type {
-    EMPTY,
-    HEARTBEAT,
-    DARK_MODE,
-    DATA
-  }
+    public void setPlaylistItem(IPlaylistItem playlistItem) {
+        this.playlistItem = playlistItem;
+    }
 
-  enum ListViewType {
-    SINGLE,
-    ALBUM,
-    PLAYLIST
-  }
+    public IPlaylistItem getPlaylistItem() {
+        return playlistItem;
+    }
 
-  private Type type;
-  private String id;
-  private Boolean paused;
-  private Boolean shuffle;
-  private String repeat;
-  private Integer volume;
-  private String context;
-  private String device;
-  private List<String> artists;
-  private Integer trackNumber;
-  private ListViewType trackListView;
-  private String title;
-  private String album;
-  private String release;
-  private String image;
-  private DominantRGBs imageColors;
-  private Integer timeCurrent;
-  private Integer timeTotal;
-  private String description;
-  private Long deployTime;
-  private List<ListTrackDTO> listTracks;
+    enum Type {
+        EMPTY,
+        HEARTBEAT,
+        DARK_MODE,
+        DATA
+    }
 
-  public PlaybackInfoDTO() {
-  }
+    enum ListViewType {
+        SINGLE,
+        ALBUM,
+        PLAYLIST
+    }
 
-  public PlaybackInfoDTO(Type type) {
-    this.type = type;
-  }
+    private Type type;
+    private String id;
+    private Boolean paused;
+    private Boolean shuffle;
+    private String repeat;
+    private Integer volume;
+    private String context;
+    private String device;
+    private List<String> artists;
+    private Integer trackNumber;
+    private ListViewType trackListView;
+    private String title;
+    private String album;
+    private String release;
+    private String image;
+    private DominantRGBs imageColors;
+    private Integer timeCurrent;
+    private Integer timeTotal;
+    private String description;
+    private Long deployTime;
+    private List<ListTrackDTO> listTracks;
 
-  @JsonIgnore
-  public boolean hasPayload() {
-    return !getType().equals(Type.EMPTY);
-  }
+    public PlaybackInfoDTO() {
+    }
 
-  public Type getType() {
-    return type;
-  }
+    public PlaybackInfoDTO(Type type) {
+        this.type = type;
+    }
 
-  public void setType(Type type) {
-    this.type = type;
-  }
+    @JsonIgnore
+    public boolean hasPayload() {
+        return !getType().equals(Type.EMPTY);
+    }
 
-  public String getId() {
-    return id;
-  }
+    public Type getType() {
+        return type;
+    }
 
-  public void setId(String id) {
-    this.id = id;
-  }
+    public void setType(Type type) {
+        this.type = type;
+    }
 
-  public Boolean isPaused() {
-    return paused;
-  }
+    public String getId() {
+        return id;
+    }
 
-  public void setPaused(Boolean paused) {
-    this.paused = paused;
-  }
+    public void setId(String id) {
+        this.id = id;
+    }
 
-  public Boolean isShuffle() {
-    return shuffle;
-  }
+    public Boolean isPaused() {
+        return paused;
+    }
 
-  public void setShuffle(Boolean shuffle) {
-    this.shuffle = shuffle;
-  }
+    public void setPaused(Boolean paused) {
+        this.paused = paused;
+    }
 
-  public String getRepeat() {
-    return repeat;
-  }
+    public Boolean isShuffle() {
+        return shuffle;
+    }
 
-  public void setRepeat(String repeat) {
-    this.repeat = repeat;
-  }
+    public void setShuffle(Boolean shuffle) {
+        this.shuffle = shuffle;
+    }
 
-  public Integer getVolume() {
-    return volume;
-  }
+    public String getRepeat() {
+        return repeat;
+    }
 
-  public void setVolume(Integer volume) {
-    this.volume = volume;
-  }
+    public void setRepeat(String repeat) {
+        this.repeat = repeat;
+    }
 
-  public String getDevice() {
-    return device;
-  }
+    public Integer getVolume() {
+        return volume;
+    }
 
-  public void setDevice(String device) {
-    this.device = device;
-  }
+    public void setVolume(Integer volume) {
+        this.volume = volume;
+    }
 
-  public String getContext() {
-    return context;
-  }
+    public String getDevice() {
+        return device;
+    }
 
-  public void setContext(String context) {
-    this.context = context;
-  }
+    public void setDevice(String device) {
+        this.device = device;
+    }
 
-  public List<String> getArtists() {
-    return artists;
-  }
+    public String getContext() {
+        return context;
+    }
 
-  public void setArtists(List<String> artists) {
-    this.artists = artists;
-  }
+    public void setContext(String context) {
+        this.context = context;
+    }
 
-  public Integer getTrackNumber() {
-    return trackNumber;
-  }
+    public List<String> getArtists() {
+        return artists;
+    }
 
-  public void setTrackNumber(Integer trackNumber) {
-    this.trackNumber = trackNumber;
-  }
+    public void setArtists(List<String> artists) {
+        this.artists = artists;
+    }
 
-  public ListViewType getTrackListView() {
-    return trackListView;
-  }
+    public Integer getTrackNumber() {
+        return trackNumber;
+    }
 
-  public void setTrackListView(ListViewType trackListView) {
-    this.trackListView = trackListView;
-  }
+    public void setTrackNumber(Integer trackNumber) {
+        this.trackNumber = trackNumber;
+    }
 
-  public String getTitle() {
-    return title;
-  }
+    public ListViewType getTrackListView() {
+        return trackListView;
+    }
 
-  public void setTitle(String title) {
-    this.title = title;
-  }
+    public void setTrackListView(ListViewType trackListView) {
+        this.trackListView = trackListView;
+    }
 
-  public String getAlbum() {
-    return album;
-  }
+    public String getTitle() {
+        return title;
+    }
 
-  public void setAlbum(String album) {
-    this.album = album;
-  }
+    public void setTitle(String title) {
+        this.title = title;
+    }
 
-  public String getRelease() {
-    return release;
-  }
+    public String getAlbum() {
+        return album;
+    }
 
-  public void setRelease(String release) {
-    this.release = release;
-  }
+    public void setAlbum(String album) {
+        this.album = album;
+    }
 
-  public String getImage() {
-    return image;
-  }
+    public String getRelease() {
+        return release;
+    }
 
-  public void setImage(String image) {
-    this.image = image;
-  }
+    public void setRelease(String release) {
+        this.release = release;
+    }
 
-  public DominantRGBs getImageColors() {
-    return imageColors;
-  }
+    public String getImage() {
+        return image;
+    }
 
-  public void setImageColors(DominantRGBs imageColors) {
-    this.imageColors = imageColors;
-  }
+    public void setImage(String image) {
+        this.image = image;
+    }
 
-  public Integer getTimeCurrent() {
-    return timeCurrent;
-  }
+    public DominantRGBs getImageColors() {
+        return imageColors;
+    }
 
-  public void setTimeCurrent(Integer timeCurrent) {
-    this.timeCurrent = timeCurrent;
-  }
+    public void setImageColors(DominantRGBs imageColors) {
+        this.imageColors = imageColors;
+    }
 
-  public Integer getTimeTotal() {
-    return timeTotal;
-  }
+    public Integer getTimeCurrent() {
+        return timeCurrent;
+    }
 
-  public void setTimeTotal(Integer timeTotal) {
-    this.timeTotal = timeTotal;
-  }
+    public void setTimeCurrent(Integer timeCurrent) {
+        this.timeCurrent = timeCurrent;
+    }
 
-  public String getDescription() {
-    return description;
-  }
+    public Integer getTimeTotal() {
+        return timeTotal;
+    }
 
-  public void setDescription(String description) {
-    this.description = description;
-  }
+    public void setTimeTotal(Integer timeTotal) {
+        this.timeTotal = timeTotal;
+    }
 
-  public Long getDeployTime() {
-    return deployTime;
-  }
+    public String getDescription() {
+        return description;
+    }
 
-  public void setDeployTime(Long deployTime) {
-    this.deployTime = deployTime;
-  }
+    public void setDescription(String description) {
+        this.description = description;
+    }
 
-  public List<ListTrackDTO> getListTracks() {
-    return listTracks;
-  }
+    public Long getDeployTime() {
+        return deployTime;
+    }
 
-  public void setListTracks(List<ListTrackDTO> listTracks) {
-    this.listTracks = listTracks;
-  }
+    public void setDeployTime(Long deployTime) {
+        this.deployTime = deployTime;
+    }
+
+    public List<ListTrackDTO> getListTracks() {
+        return listTracks;
+    }
+
+    public void setListTracks(List<ListTrackDTO> listTracks) {
+        this.listTracks = listTracks;
+    }
 }
