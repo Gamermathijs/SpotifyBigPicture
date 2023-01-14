@@ -258,29 +258,48 @@ public class ContextProvider {
         return formattedQueueTracks;
     }
 
-    public void updateQueueTracks() {
+    public void updateQueueTracks(IPlaylistItem playlistItem) {
         ListTrackDTO currentSong;
-        List<ListTrackDTO> nextSongs;
+        List<ListTrackDTO> nextSongs = new ArrayList<>();
         try {
             if (previousTracks == null) {
                 previousTracks = Arrays.stream(spotifyApi.getCurrentUsersRecentlyPlayedTracks().limit(10).build().execute().getItems()).map((track) -> {
                     return new ListTrackDTO(track.getTrack().getId(), 0, BotUtils.toArtistNamesList(track.getTrack()), track.getTrack().getName(), track.getTrack().getDurationMs());
                 }).collect(Collectors.toList());
+
+                Track track = (Track) playlistItem;
+                previousTracks.add(new ListTrackDTO(track.getId(), 0, BotUtils.toArtistNamesList(track), track.getName(), track.getDurationMs()));
             }
 
+/*
             IPlaylistItem currentlyPlayingTrack = spotifyApi.getUsersCurrentlyPlayingTrack().build().execute().getItem();
             currentSong = new ListTrackDTO(currentlyPlayingTrack.getId(), 0, BotUtils.toArtistNamesList((Track) currentlyPlayingTrack), currentlyPlayingTrack.getName(), currentlyPlayingTrack.getDurationMs());
+*/
 
-            if (previousTrack == null || !previousTrack.getId().equals(currentSong.getId())){
+
+            currentSong = new ListTrackDTO(playlistItem.getId(), 0, BotUtils.toArtistNamesList((Track) playlistItem), playlistItem.getName(), playlistItem.getDurationMs());
+
+            ListTrackDTO previousPreviousSong = previousTracks.get(previousTracks.size() - 2);
+
+            if (previousPreviousSong != null && currentSong.getId().equals(previousPreviousSong.getId())) {
+                // If the current song is the same as the previous previous song, the user has gone back in the queue
+                previousTracks.remove(previousTracks.size() - 1);
+                previousTrack = previousPreviousSong;
+            } else if (previousTrack == null || !previousTrack.getId().equals(currentSong.getId())) {
+                // If the current song is not the same as the previous song, the user has skipped to a new song
                 previousTracks.add(currentSong);
                 previousTrack = currentSong;
             }
 
+            /*
             nextSongs = SpotifyCall.execute(spotifyApi.getTheUsersQueue()).getQueue().stream().map((track) -> {
                 return new ListTrackDTO(track.getId(), 0, BotUtils.toArtistNamesList(track), track.getName(), track.getDurationMs());
             }).collect(Collectors.toList());
 
-
+*/
+            nextSongs = spotifyApi.getTheUsersQueue().build().execute().getQueue().stream().map((track) -> {
+                return new ListTrackDTO(track.getId(), 0, BotUtils.toArtistNamesList(track), track.getName(), track.getDurationMs());
+            }).collect(Collectors.toList());
 
 
             List<ListTrackDTO> queue = new ArrayList<>(previousTracks);

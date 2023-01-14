@@ -71,12 +71,13 @@ public class PlaybackInfoProvider {
                 PlaybackInfoDTO currentPlaybackInfo = null;
                 CurrentlyPlayingType type = info.getCurrentlyPlayingType();
                 if (type.equals(CurrentlyPlayingType.TRACK)) {
-//                    System.out.println("Track1: " + info.getItem().getName());
                     currentPlaybackInfo = buildInfoTrack(info);
-//                    System.out.println("Track2: " + (currentPlaybackInfo.getTitle()));
                 } else if (type.equals(CurrentlyPlayingType.EPISODE)) {
                     currentPlaybackInfo = buildInfoEpisode(info);
                 }
+
+                contextProvider.updateQueueTracks(info.getItem());
+
                 if (full) {
                     this.previous = currentPlaybackInfo;
                     return currentPlaybackInfo;
@@ -127,7 +128,7 @@ public class PlaybackInfoProvider {
     }
 
     private PlaybackInfoDTO buildBaseInfo(CurrentlyPlayingContext info) {
-        IPlaylistItem playlistItem = SpotifyCall.execute(spotifyApi.getUsersCurrentlyPlayingTrack()).getItem();
+        IPlaylistItem playlistItem = info.getItem(); // SpotifyCall.execute(spotifyApi.getUsersCurrentlyPlayingTrack()).getItem();
         PlaybackInfoDTO pInfo = new PlaybackInfoDTO(PlaybackInfoDTO.Type.DATA);
 
         pInfo.setPlaylistItem(playlistItem);
@@ -161,7 +162,6 @@ public class PlaybackInfoProvider {
         pInfo.setTimeCurrent(info.getProgress_ms());
         pInfo.setTimeTotal(playlistItem.getDurationMs());
 
-        contextProvider.updateQueueTracks();
         pInfo.setQueueTrackNumber(contextProvider.getQueueTrackNumber());
         pInfo.setQueueTrackList(contextProvider.getFormattedQueueTracks());
 
@@ -183,14 +183,15 @@ public class PlaybackInfoProvider {
     private PlaybackInfoDTO buildInfoTrack(CurrentlyPlayingContext info) {
         PlaybackInfoDTO pInfo = buildBaseInfo(info);
 
-//        Track track = (Track) pInfo.getPlaylistItem();
+        IPlaylistItem playlistItem = info.getItem();
+        Track track = (Track) playlistItem;
 
-        Track track = (Track) info.getItem();
         pInfo.setArtists(BotUtils.toArtistNamesList(track.getArtists()));
         pInfo.setTitle(track.getName());
         pInfo.setAlbum(track.getAlbum().getName());
         pInfo.setRelease(PlaybackInfoUtils.findReleaseYear(track));
         pInfo.setDescription(BLANK);
+
 
         return pInfo;
     }
