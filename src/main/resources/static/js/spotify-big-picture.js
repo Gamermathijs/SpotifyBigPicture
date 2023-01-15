@@ -165,7 +165,7 @@ async function setDisplayData(changes) {
         .then(() => setTextData(changes));
 }
 
-function addTrack(trackItem, trackNumPadLength) {
+function addTrack(trackItem, trackNumPadLength, trackListContainer) {
     let trackElem = document.createElement("div");
     trackElem.className = "track-elem";
 
@@ -278,73 +278,19 @@ function setTextData(changes) {
             trackListContainer.innerHTML = "";
 
             for (let trackItem of listTracks) {
-                let trackElem = document.createElement("div");
-                trackElem.className = "track-elem";
-
-                let trackNumberContainer = document.createElement("div");
-                trackNumberContainer.innerHTML = padToLength(trackItem.trackNumber, trackNumPadLength);
-                trackNumberContainer.className = "track-number"
-
-                let trackArtist = document.createElement("div");
-                trackArtist.innerHTML = trackItem.artists[0];
-                trackArtist.className = "track-artist";
-
-                let splitTitle = separateUnimportantTitleInfo(trackItem.title);
-                let trackName = document.createElement("div");
-                trackName.className = "track-name"
-                let trackNameMain = document.createElement("span");
-                trackNameMain.innerHTML = removeFeaturedArtists(splitTitle.main) + buildFeaturedArtistsString(trackItem.artists);
-                let trackNameExtra = document.createElement("span");
-                trackNameExtra.className = "extra";
-                trackNameExtra.innerHTML = splitTitle.extra;
-                trackName.append(trackNameMain, trackNameExtra);
-
-                let trackLength = document.createElement("div");
-                trackLength.className = "track-length"
-                trackLength.innerHTML = formatTime(0, trackItem.length).total;
-
-                // TODO performance improvement with sliding window (NTS: visibility hidden does not do anything, but display none does)
-
-                trackElem.append(trackNumberContainer, trackArtist, trackName, trackLength);
-                trackListContainer.append(trackElem);
+                addTrack(trackItem, trackNumPadLength, trackListContainer);
             }
         } else {
-            console.log("queue update");
-            console.log("changesListTracks", changesListTracks);
+            trackListContainer.innerHTML = "";
+
             if (changesListTracks !== undefined) {
                 for (let trackItem of updatedListTracks) {
-                    let trackElem = document.createElement("div");
-                    trackElem.className = "track-elem";
-
-                    let trackNumberContainer = document.createElement("div");
-                    trackNumberContainer.innerHTML = padToLength(trackItem.trackNumber, trackNumPadLength);
-                    trackNumberContainer.className = "track-number"
-
-                    let trackArtist = document.createElement("div");
-                    trackArtist.innerHTML = trackItem.artists[0];
-                    trackArtist.className = "track-artist";
-
-                    let splitTitle = separateUnimportantTitleInfo(trackItem.title);
-                    let trackName = document.createElement("div");
-                    trackName.className = "track-name"
-                    let trackNameMain = document.createElement("span");
-                    trackNameMain.innerHTML = removeFeaturedArtists(splitTitle.main) + buildFeaturedArtistsString(trackItem.artists);
-                    let trackNameExtra = document.createElement("span");
-                    trackNameExtra.className = "extra";
-                    trackNameExtra.innerHTML = splitTitle.extra;
-                    trackName.append(trackNameMain, trackNameExtra);
-
-                    let trackLength = document.createElement("div");
-                    trackLength.className = "track-length"
-                    trackLength.innerHTML = formatTime(0, trackItem.length).total;
-
-                    // TODO performance improvement with sliding window (NTS: visibility hidden does not do anything, but display none does)
-
-                    trackElem.append(trackNumberContainer, trackArtist, trackName, trackLength);
-                    trackListContainer.append(trackElem);
+                    addTrack(trackItem, trackNumPadLength, trackListContainer);
                 }
             }
         }
+
+        updateScrollPositions(trackNumber);
 
         fadeIn(trackListContainer);
     }
