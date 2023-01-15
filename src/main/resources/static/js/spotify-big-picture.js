@@ -165,6 +165,38 @@ async function setDisplayData(changes) {
         .then(() => setTextData(changes));
 }
 
+function addTrack(trackItem, trackNumPadLength) {
+    let trackElem = document.createElement("div");
+    trackElem.className = "track-elem";
+
+    let trackNumberContainer = document.createElement("div");
+    trackNumberContainer.innerHTML = padToLength(trackItem.trackNumber, trackNumPadLength);
+    trackNumberContainer.className = "track-number"
+
+    let trackArtist = document.createElement("div");
+    trackArtist.innerHTML = trackItem.artists[0];
+    trackArtist.className = "track-artist";
+
+    let splitTitle = separateUnimportantTitleInfo(trackItem.title);
+    let trackName = document.createElement("div");
+    trackName.className = "track-name"
+    let trackNameMain = document.createElement("span");
+    trackNameMain.innerHTML = removeFeaturedArtists(splitTitle.main) + buildFeaturedArtistsString(trackItem.artists);
+    let trackNameExtra = document.createElement("span");
+    trackNameExtra.className = "extra";
+    trackNameExtra.innerHTML = splitTitle.extra;
+    trackName.append(trackNameMain, trackNameExtra);
+
+    let trackLength = document.createElement("div");
+    trackLength.className = "track-length"
+    trackLength.innerHTML = formatTime(0, trackItem.length).total;
+
+    // TODO performance improvement with sliding window (NTS: visibility hidden does not do anything, but display none does)
+
+    trackElem.append(trackNumberContainer, trackArtist, trackName, trackLength);
+    trackListContainer.append(trackElem);
+}
+
 function setTextData(changes) {
     // Main Info
     let updatedListTracks = changes.listTracks;
@@ -182,7 +214,7 @@ function setTextData(changes) {
 
     if (useQueue) {
         currentDataListTracks = currentData.queueTrackList;
-        changesListTracks = changes.queueTrackList;
+        // changesListTracks = changes.queueTrackList;
         listViewType = "PLAYLIST";
     }
 
@@ -197,6 +229,10 @@ function setTextData(changes) {
     let listViewEnabled = listViewType !== "SINGLE"
         && trackCount > 1
         && !isQueue;
+
+    console.log("listViewEnabled", listViewEnabled);
+    console.log("trackCount", trackCount);
+    console.log("isQueue", isQueue);
 
     let titleDisplayed = !listViewEnabled || listViewType === "PLAYLIST";
     showHide(titleContainer, titleDisplayed);
@@ -233,39 +269,9 @@ function setTextData(changes) {
         fadeIn(titleContainer);
     }
 
-    function addTrack(trackItem, trackNumPadLength) {
-        let trackElem = document.createElement("div");
-        trackElem.className = "track-elem";
+    if ((('listTracks' in changes && !useQueue) || ('queueTrackList' in changes && useQueue))
+        && JSON.stringify(changesListTracks) !== JSON.stringify(currentDataListTracks)) {
 
-        let trackNumberContainer = document.createElement("div");
-        trackNumberContainer.innerHTML = padToLength(trackItem.trackNumber, trackNumPadLength);
-        trackNumberContainer.className = "track-number"
-
-        let trackArtist = document.createElement("div");
-        trackArtist.innerHTML = trackItem.artists[0];
-        trackArtist.className = "track-artist";
-
-        let splitTitle = separateUnimportantTitleInfo(trackItem.title);
-        let trackName = document.createElement("div");
-        trackName.className = "track-name"
-        let trackNameMain = document.createElement("span");
-        trackNameMain.innerHTML = removeFeaturedArtists(splitTitle.main) + buildFeaturedArtistsString(trackItem.artists);
-        let trackNameExtra = document.createElement("span");
-        trackNameExtra.className = "extra";
-        trackNameExtra.innerHTML = splitTitle.extra;
-        trackName.append(trackNameMain, trackNameExtra);
-
-        let trackLength = document.createElement("div");
-        trackLength.className = "track-length"
-        trackLength.innerHTML = formatTime(0, trackItem.length).total;
-
-        // TODO performance improvement with sliding window (NTS: visibility hidden does not do anything, but display none does)
-
-        trackElem.append(trackNumberContainer, trackArtist, trackName, trackLength);
-        trackListContainer.append(trackElem);
-    }
-
-    if ('listTracks' in changes && JSON.stringify(changesListTracks) !== JSON.stringify(currentDataListTracks)) {
         let listTracks = changesListTracks || currentDataListTracks;
         let trackNumPadLength = listTracks.length.toString().length;
         if (!useQueue) {
@@ -303,8 +309,10 @@ function setTextData(changes) {
                 trackListContainer.append(trackElem);
             }
         } else {
+            console.log("queue update");
+            console.log("changesListTracks", changesListTracks);
             if (changesListTracks !== undefined) {
-                for (let trackItem of listTracks) {
+                for (let trackItem of updatedListTracks) {
                     let trackElem = document.createElement("div");
                     trackElem.className = "track-elem";
 
@@ -341,9 +349,7 @@ function setTextData(changes) {
         fadeIn(trackListContainer);
     }
 
-    if ('trackNumber' in changes || currentData.trackListView !== "SINGLE" || (useQueue && 'queTrackList' in changes)) {
-        console.log(trackNumber);
-        console.log(updatedListTrackNumber || useQueue ? currentData.queueTrackNumber : currentData.trackNumber)
+    if ((('trackNumber' in changes && !useQueue) || ('queueTrackNumber' in changes && useQueue)) || currentData.trackListView !== "SINGLE") {
         updateScrollPositions(trackNumber);
     }
 
