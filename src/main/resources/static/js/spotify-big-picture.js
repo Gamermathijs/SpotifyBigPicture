@@ -167,16 +167,18 @@ async function setDisplayData(changes) {
 
 function setTextData(changes) {
     // Main Info
+    let updatedListTracks = changes.listTracks;
+    let updatedListTrackNumber = changes.trackNumber;
     if (useQueue && ('queueTrackNumber' in changes || 'queueTrackList' in changes)) {
-        changes.listTracks = changes.queueTrackList;
-        changes.trackNumber = changes.queueTrackNumber;
+        updatedListTracks = changes.queueTrackList;
+        updatedListTrackNumber = changes.queueTrackNumber;
     }
 
     let titleContainer = document.getElementById("title");
     let trackListContainer = document.getElementById("track-list");
     let listViewType = 'trackListView' in changes ? changes.trackListView : currentData.trackListView;
     let currentDataListTracks = currentData.listTracks;
-    let changesListTracks = changes.listTracks;
+    let changesListTracks = updatedListTracks;
 
     if (useQueue) {
         currentDataListTracks = currentData.queueTrackList;
@@ -185,10 +187,10 @@ function setTextData(changes) {
     }
 
     let trackCount = (changesListTracks || currentDataListTracks || []).length;
-    let trackNumber = 'trackNumber' in changes ? changes.trackNumber : currentData.trackNumber;
+    let trackNumber = 'trackNumber' in changes ? updatedListTrackNumber : currentData.trackNumber;
 
     if (useQueue) {
-        trackNumber = ('queueTrackNumber' in changes ? changes.queueTrackNumber : currentData.queueTrackNumber) - 1;
+        trackNumber = ('queueTrackNumber' in changes ? changes.queueTrackNumber : currentData.queueTrackNumber);
     }
 
     let isQueue = trackNumber === 0 || ('context' in changes && changes.context.startsWith("Queue >> "));
@@ -302,28 +304,36 @@ function setTextData(changes) {
             }
         } else {
             if (changesListTracks !== undefined) {
-                let tracksToRemove = currentDataListTracks.map((track, index) => {
-                    track.trackNumber = index
-                    console.log(track, index);
-                    return track;
-                }).filter((track, index) => changesListTracks.at(index) === undefined || changesListTracks.at(index).id !== track.id).reverse();
-                for (let trackItem of tracksToRemove) {
-                    let child = trackListContainer.children[trackItem.trackNumber];
-                    currentDataListTracks = currentDataListTracks.filter((track, index) => index !== trackItem.trackNumber);
-                    if (child === undefined) {
-                        continue;
-                    }
-                    child.remove();
-                }
-                let newTrackElems = changesListTracks.filter((track, index) => currentDataListTracks.at(index) === undefined);
-                for (let trackItem of newTrackElems) {
-                    if (currentDataListTracks.at(trackItem.trackNumber) === undefined) {
-                        addTrack(trackItem, trackNumPadLength);
-                    } else {
-                        // trackListContainer.children[trackItem.trackNumber - 1].remove();
-                        // trackListContainer.children.item(trackItem.trackNumber - 1).remove();
-                        addTrack(trackItem, trackNumPadLength);
-                    }
+                for (let trackItem of listTracks) {
+                    let trackElem = document.createElement("div");
+                    trackElem.className = "track-elem";
+
+                    let trackNumberContainer = document.createElement("div");
+                    trackNumberContainer.innerHTML = padToLength(trackItem.trackNumber, trackNumPadLength);
+                    trackNumberContainer.className = "track-number"
+
+                    let trackArtist = document.createElement("div");
+                    trackArtist.innerHTML = trackItem.artists[0];
+                    trackArtist.className = "track-artist";
+
+                    let splitTitle = separateUnimportantTitleInfo(trackItem.title);
+                    let trackName = document.createElement("div");
+                    trackName.className = "track-name"
+                    let trackNameMain = document.createElement("span");
+                    trackNameMain.innerHTML = removeFeaturedArtists(splitTitle.main) + buildFeaturedArtistsString(trackItem.artists);
+                    let trackNameExtra = document.createElement("span");
+                    trackNameExtra.className = "extra";
+                    trackNameExtra.innerHTML = splitTitle.extra;
+                    trackName.append(trackNameMain, trackNameExtra);
+
+                    let trackLength = document.createElement("div");
+                    trackLength.className = "track-length"
+                    trackLength.innerHTML = formatTime(0, trackItem.length).total;
+
+                    // TODO performance improvement with sliding window (NTS: visibility hidden does not do anything, but display none does)
+
+                    trackElem.append(trackNumberContainer, trackArtist, trackName, trackLength);
+                    trackListContainer.append(trackElem);
                 }
             }
         }
@@ -332,7 +342,9 @@ function setTextData(changes) {
     }
 
     if ('trackNumber' in changes || currentData.trackListView !== "SINGLE" || (useQueue && 'queTrackList' in changes)) {
-        updateScrollPositions(useQueue ? changes.queueTrackNumber || currentData.queueTrackNumber : changes.trackNumber);
+        console.log(trackNumber);
+        console.log(updatedListTrackNumber || useQueue ? currentData.queueTrackNumber : currentData.trackNumber)
+        updateScrollPositions(trackNumber);
     }
 
     if ('artists' in changes && JSON.stringify(changes.artists) !== JSON.stringify(currentData.artists)) {
